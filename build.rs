@@ -354,7 +354,7 @@ fn pregenerate_asm_main() {
             &pregenerated
         };
 
-        let perlasm_src_dsts = perlasm_src_dsts(&asm_dir, asm_target);
+        let perlasm_src_dsts = perlasm_src_dsts(asm_dir, asm_target);
         perlasm(&perlasm_src_dsts, asm_target);
 
         if asm_target.preassemble {
@@ -431,7 +431,7 @@ fn build_c_code(target: &Target, pregenerated: PathBuf, out_dir: &Path) {
 
     let core_srcs = sources_for_arch(&target.arch)
         .into_iter()
-        .filter(|p| !is_perlasm(&p))
+        .filter(|p| !is_perlasm(p))
         .collect::<Vec<_>>();
 
     let test_srcs = RING_TEST_SRCS.iter().map(PathBuf::from).collect::<Vec<_>>();
@@ -447,8 +447,8 @@ fn build_c_code(target: &Target, pregenerated: PathBuf, out_dir: &Path) {
         .for_each(|&(lib_name_suffix, srcs, additional_srcs)| {
             let lib_name = String::from(BORINGSSL_PREFIX_VALUE) + lib_name_suffix;
             build_library(
-                &target,
-                &out_dir,
+                target,
+                out_dir,
                 &lib_name,
                 srcs,
                 additional_srcs,
@@ -484,7 +484,7 @@ fn build_library(
     let mut c = cc::Build::new();
 
     for f in LD_FLAGS {
-        let _ = c.flag(&f);
+        let _ = c.flag(f);
     }
     match target.os.as_str() {
         "macos" => {
@@ -563,7 +563,7 @@ fn cc(
         e => panic!("Unsupported file extension: {:?}", e),
     };
     for f in cpp_flags(target) {
-        let _ = c.flag(&f);
+        let _ = c.flag(f);
     }
     if target.os != "none"
         && target.os != "redox"
@@ -643,8 +643,8 @@ fn cc(
 
 fn nasm(file: &Path, arch: &str, out_file: &Path, include_dir: &Path) -> Command {
     let oformat = match arch {
-        "x86_64" => ("win64"),
-        "x86" => ("win32"),
+        "x86_64" => "win64",
+        "x86" => "win32",
         _ => panic!("unsupported arch: {}", arch),
     };
 
@@ -762,7 +762,7 @@ fn perlasm(src_dst: &[(PathBuf, PathBuf)], asm_target: &AsmTarget) {
         let dst = dst
             .to_str()
             .expect("Could not convert path")
-            .replace("\\", "/");
+            .replace('\\', "/");
         args.push(dst);
         run_command_with_args(&get_command("PERL_EXECUTABLE", "perl"), &args);
     }
@@ -810,7 +810,7 @@ fn generate_prefix_symbols(target: &Target, out_dir: &Path) -> Result<(), std::i
     generate_prefix_symbols_header(out_dir, "prefix_symbols.h", '#', None)?;
 
     if target.os == "windows" {
-        let _ = generate_prefix_symbols_nasm(out_dir)?;
+        generate_prefix_symbols_nasm(out_dir)?;
     } else {
         generate_prefix_symbols_header(
             out_dir,
@@ -842,9 +842,9 @@ fn generate_prefix_symbols_header(
     std::fs::create_dir_all(&dir)?;
 
     let path = dir.join(filename);
-    let mut file = std::fs::File::create(&path)?;
+    let mut file = std::fs::File::create(path)?;
 
-    let filename_ident = filename.replace(".", "_").to_uppercase();
+    let filename_ident = filename.replace('.', "_").to_uppercase();
     writeln!(
         file,
         r#"
